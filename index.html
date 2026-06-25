@@ -1,19 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Motorcycle Ride Analytics</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: #fff; text-align: center; }
-        .container { width: 90%; max-width: 1000px; margin: 40px auto; }
-        canvas { background: #1e1e1e; padding: 20px; border-radius: 8px; margin-top: 20px; }
-        button { background: #00adb5; border: none; color: white; padding: 12px 24px; 
-                 border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
-        button:hover { background: #008c95; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #121212;
+            color: #ffffff;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #ffffff;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        canvas {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        button {
+            background: #00adb5;
+            border: none;
+            color: white;
+            padding: 14px 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.2s ease;
+        }
+
+        button:hover {
+            background: #008c95;
+        }
     </style>
 </head>
+
 <body>
 
     <div class="container">
@@ -23,52 +64,61 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-        import { getStorage, ref, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-storage.js";
+        import {initializeApp} from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+        import {getDatabase, ref, get} from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
 
+        // Your specific regional Web App configurations
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            projectId: "YOUR_PROJECT",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyDcrSihHGEffYirqebyj-kd2IDX84i-b3A",
+            authDomain: "bike-hub-f68b9.firebaseapp.com",
+            databaseURL: "https://bike-hub-f68b9-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "bike-hub-f68b9",
+            storageBucket: "bike-hub-f68b9.firebasestorage.app",
+            messagingSenderId: "630028140072",
+            appId: "1:630028140072:web:8a1c2ad6f9d6dfee1abf1d"
         };
 
+        // Initialize Firebase services
         const app = initializeApp(firebaseConfig);
-        const storage = getStorage(app);
+        const database = getDatabase(app);
 
-        // Chart.js instance tracking
+        // Track chart instance to clear memory on redraws
         let rideChart;
 
         document.getElementById('loadRideBtn').addEventListener('click', async () => {
             try {
-                // Point directly to where your ESP32 drops the completed log file
-                const fileRef = ref(storage, 'rides/latest_ride.json');
-                
-                // Fetch the temporary cloud download link 
-                const url = await getDownloadURL(fileRef);
-                
-                // Grab the file contents raw via fetch
-                const response = await fetch(url);
-                const rideData = await response.json(); // Array of elements: [{t: time, a: angle}]
+                // Target the exact absolute key path where the ESP32 pushes data arrays
+                const rideRef = ref(database, 'rides/latest_ride');
 
-                // Map data structures for Chart.js inputs
-                const timestamps = rideData.map(point => `${point.t}ms`);
-                const angles = rideData.map(point => point.a);
+                // Fetch the snapshot packet
+                const snapshot = await get(rideRef);
 
-                renderChart(timestamps, angles);
+                if (snapshot.exists()) {
+                    const jsonString = snapshot.val();
+
+                    // Parse string array back into local JavaScript Objects
+                    const rideData = JSON.parse(jsonString);
+
+                    // Isolate keys into parallel arrays for Chart.js parsing mechanics
+                    const timestamps = rideData.map(point => `${point.t}ms`);
+                    const angles = rideData.map(point => point.a);
+
+                    renderChart(timestamps, angles);
+                } else {
+                    alert("No data entry logged yet at path 'rides/latest_ride'. Complete an ESP32 record phase first.");
+                }
 
             } catch (error) {
-                console.error("Error loading ride profile:", error);
-                alert("Failed to fetch ride profile. Ensure the ESP32 uploaded the data file successfully.");
+                console.error("Error communicating with Europe-West1 RTDB instance:", error);
+                alert("Failed to read from the cloud node. Verify your API keys match the web app configuration.");
             }
         });
 
         function renderChart(labels, dataPoints) {
             const ctx = document.getElementById('rideChart').getContext('2d');
-            
-            // Wipe out older chart instances to clear system memory before redrawing
-            if (rideChart) { rideChart.destroy(); }
+
+            // Wipe legacy instances out of memory buffer to allow clear frame redraw overlays
+            if (rideChart) {rideChart.destroy();}
 
             rideChart = new Chart(ctx, {
                 type: 'line',
@@ -79,21 +129,35 @@
                         data: dataPoints,
                         borderColor: '#00adb5',
                         backgroundColor: 'rgba(0, 173, 181, 0.1)',
-                        borderWidth: 2,
-                        pointRadius: 1, // Tiny data points so long track sessions aren't cluttered
-                        tension: 0.1,
+                        borderWidth: 2.5,
+                        pointRadius: 1, // Minimize visual density for multi-sample batches
+                        tension: 0.2,   // Smooth variations out slightly
                         fill: true
                     }]
                 },
                 options: {
                     responsive: true,
                     scales: {
-                        y: { min: -60, max: 60, grid: { color: '#333' } },
-                        x: { grid: { display: false } }
+                        y: {
+                            min: -60,
+                            max: 60,
+                            grid: {color: '#333333'},
+                            ticks: {color: '#ffffff'}
+                        },
+                        x: {
+                            grid: {display: false},
+                            ticks: {color: '#ffffff', maxTicksLimit: 10} // Prevents timeline overlaps
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {color: '#ffffff'}
+                        }
                     }
                 }
             });
         }
     </script>
 </body>
+
 </html>
