@@ -87,33 +87,25 @@
 
         document.getElementById('loadRideBtn').addEventListener('click', async () => {
             try {
-                // Target the exact absolute key path where the ESP32 pushes data arrays
                 const rideRef = ref(database, 'rides/latest_ride');
-
-                // Fetch the snapshot packet
                 const snapshot = await get(rideRef);
 
                 if (snapshot.exists()) {
-                    const jsonString = snapshot.val();
+                    // Firebase returns the data straight as a clean iterable array!
+                    const rideData = snapshot.val();
 
-                    // Parse string array back into local JavaScript Objects
-                    const rideData = JSON.parse(jsonString);
-
-                    // Isolate keys into parallel arrays for Chart.js parsing mechanics
+                    // Map data arrays cleanly for Chart.js
                     const timestamps = rideData.map(point => `${point.t}ms`);
                     const angles = rideData.map(point => point.a);
 
                     renderChart(timestamps, angles);
                 } else {
-                    alert("No data entry logged yet at path 'rides/latest_ride'. Complete an ESP32 record phase first.");
+                    alert("No data entry logged yet.");
                 }
-
             } catch (error) {
-                console.error("Error communicating with Europe-West1 RTDB instance:", error);
-                alert("Failed to read from the cloud node. Verify your API keys match the web app configuration.");
+                console.error("Error reading database:", error);
             }
         });
-
         function renderChart(labels, dataPoints) {
             const ctx = document.getElementById('rideChart').getContext('2d');
 
