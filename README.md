@@ -41,7 +41,7 @@ Usage
 
     Visualization:
 
-        Use the provided index.html in a web browser.
+        Use the provided index.html in a web browser or visit https://smialxd.github.io/bike-hub/
 
         Select your downloaded .json recording file using the file picker. (or use one of the example files in the exampleJson folder)
 
