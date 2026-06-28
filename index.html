@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Telemetry Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <input type="file" id="fileInput" accept=".json">
+    <div style="width: 80%; margin: auto;">
+        <canvas id="telemetryChart"></canvas>
+    </div>
+
+    <script>
+        let myChart;
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const data = JSON.parse(e.target.result);
+                // Assuming JSON format: {"timestamp": "lean,accX,accY,accZ"}
+                const labels = Object.keys(data);
+                const values = Object.values(data).map(v => v.split(',')[0]); // Plotting lean angle
+
+                if (myChart) myChart.destroy();
+                const ctx = document.getElementById('telemetryChart').getContext('2d');
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{ label: 'Lean Angle', data: values, borderColor: 'blue' }]
+                    }
+                });
+            };
+            reader.readAsText(file);
+        });
+    </script>
+</body>
+</html>
