@@ -1,5 +1,5 @@
 #### To-Do List
-### TTGO
+## TTGO
 Overhaul the menu:
 - better framerate
 - add dashboard
@@ -9,7 +9,7 @@ Overhaul the menu:
 Add Bluetooth functionality:
 - how to select a device to connect to
 
-## Menu
+# Menu
 
 Add upload options:
 - Upload via Bluetooth
@@ -19,12 +19,12 @@ Add "Settings" to menu:
 - Connect Phone 
 - Brighness
 
-### App
+## App
 
-## Visuals 
+# Visuals 
 - Add a "BikeHub" logo
 - overhaul the graph
-## Functionality
+# Functionality
 Settings for TTGO:
 - add way to configure TTGO
 
